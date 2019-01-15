@@ -145,7 +145,7 @@ function update_p1_bullets()
             if(bOverlap)then
                 e.hp-=1
                 --todo bullet explosion
-                e.blink=true
+                if(e.bDidBlink==false)e.bBlink=true
                 del(p1_bullets,b)
 
                 if(e.hp<=0)then
@@ -200,7 +200,7 @@ function update_p1_beam()
                 p1.beam.ysize=p1.beam.ystart-(e.y+e.h*8)
                 e.hp-=1
                 --todo beam explosion thing
-                e.blink=true
+                e.bBlink=true
 
                 if(e.hp<=0)then
                     del(enemies,e)
@@ -248,7 +248,8 @@ mem=0
 
 function _init()
     make_levels()
-    make_bg_stars()
+    -- make_bg_stars()
+    star_emitter_1.make()
     load_level(1)
 end
 
@@ -319,7 +320,8 @@ function make_enemy(type,frames,x,y,w,h)
     e.w=w
     e.h=h
     e.hp=1
-    e.blink=false
+    e.bBlink=false
+    e.bDidBlink=false
     e.clk=0
     --default draw function
     e.draw=function()
@@ -364,15 +366,17 @@ end
 
 function draw_enemies()
     for e in all(enemies)do
-        if(e.blink)then
-            --briefly make whole palette white to blink injured enemy
+        if(e.bBlink and not e.bDidBlink)then
+            --briefly make whole palette white to bBlink injured enemy
             for c=0,15 do
                 pal(c,7)
             end
             e.draw()
-            e.blink=false
+            e.bDidBlink=true
+            e.bBlink=false
             pal()
         else
+            e.bDidBlink=false
             e.draw()
         end
     end
@@ -401,52 +405,120 @@ end
 -->8
 --background stuff
 bg_stars={}
+star_emitter_1={}
+star_emitter_1.clk=0
+star_emitter_1.maxclk=20
+star_emitter_1.make=function()
+    for i=0,rnd(5) do
+        local star={}
+        star.x=rnd(127)
+        star.y=-1
+        
+        local spd=rnd(25)/100
+        star.update=function()
+            star.y+=spd+1
+            if(star.y>128)del(bg_stars,star)
+        end
+        star.draw=function()
+            pset(star.x,star.y,7)
+        end
+        add(bg_stars,star)
+    end
+end
 
-function make_bg_stars()
-    for x=0,127 do
-        for y=0,127 do
-            local r=rnd(10000)
-            if(r<20)then
-                local star={}
-                star.x=x
-                star.y=y 
-                add(bg_stars, star)
+star_emitter_2={}
+star_emitter_2.clk=0
+star_emitter_2.maxclk=40
+star_emitter_2.size=4
+star_emitter_2.make=function()
+    for i=0,rnd(3) do
+        local star={}
+        star.x=rnd(127)
+        star.y=-1
+        
+        local spd=rnd(225)/100
+        star.update=function()
+            star.y+=spd+2.5
+            if(star.y>128)del(bg_stars,star)
+        end
+        star.draw=function()
+            for i=0,rnd(star_emitter_2.size) do
+                pset(star.x,star.y-i,7)
             end
         end
+        add(bg_stars,star)
     end
 end
 
 function draw_bg_stars()
     for s in all(bg_stars)do
-        pset(s.x,s.y,7)
+        s.draw()
     end
 end
 
 function update_bg_stars()
-    local respawn=0
-
     for s in all(bg_stars)do
-        local r=0
-        s.y+=1
-        if(s.y>128)then
-            del(bg_stars,s)
-            r=s.y-128
-            if(r>respawn)respawn=r
-        end
+        s.update()
+    end
+    star_emitter_1.clk+=1
+    if(star_emitter_1.clk>star_emitter_1.maxclk)then
+        star_emitter_1.clk=0
+        star_emitter_1.make()
     end
 
-    for i=0,respawn do
-        for x=0,127 do
-            local r=rnd(10000)
-            if(r<20)then
-                local star={}
-                star.x=x
-                star.y=1-i
-                add(bg_stars, star)
-            end
-        end
+    star_emitter_2.clk+=1
+    if(star_emitter_2.clk>star_emitter_2.maxclk)then
+        star_emitter_2.clk=0
+        star_emitter_2.make()
     end
 end
+-- bg_stars={}
+
+-- function make_bg_stars()
+--     for x=0,127 do
+--         for y=0,127 do
+--             local r=rnd(10000)
+--             if(r<20)then
+--                 local star={}
+--                 star.x=x
+--                 star.y=y 
+--                 add(bg_stars, star)
+--             end
+--         end
+--     end
+-- end
+
+-- function draw_bg_stars()
+--     for s in all(bg_stars)do
+--         pset(s.x,s.y,7)
+--     end
+-- end
+
+-- function update_bg_stars()
+--     local respawn=0
+
+--     for s in all(bg_stars)do
+--         local r=0
+--         s.y+=1
+--         if(s.y>128)then
+--             del(bg_stars,s)
+--             r=s.y-128
+--             if(r>respawn)respawn=r
+--         end
+--     end
+
+--     for i=0,respawn do
+--         for x=0,127 do
+--             local r=rnd(10000)
+--             if(r<20)then
+--                 local star={}
+--                 star.x=x
+--                 star.y=1-i
+--                 add(bg_stars, star)
+--             end
+--         end
+--     end
+-- end
 -->8
 --score stuff
 -->8
